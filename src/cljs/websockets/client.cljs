@@ -3,11 +3,12 @@
   (:require [cljs.core.async :as async
              :refer [<! >! chan close! put! take! sliding-buffer
                      dropping-buffer timeout]]
-            goog.net.WebSocket))
+            [websockets.core :as core]))
 
-(let [socket (goog.net.WebSocket.)]
-  (.open socket (str "ws://localhost:8080/"))
-  (.addEventListener socket goog.net.WebSocket.EventType.MESSAGE (fn [e]
-    (.log js/console (.-message e))
-    (.send socket "sup?")
-    (.send socket "yeah."))))
+(let [[in out] (core/connect "ws://localhost:8080/")]
+  (go
+    (loop []
+      (let [e (<! in)]
+        (put! out "sup?")
+        (put! out "yeah?")
+        (recur)))))
