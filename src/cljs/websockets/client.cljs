@@ -5,10 +5,19 @@
                      dropping-buffer timeout]]
             [websockets.core :as core]))
 
+(defn stringify
+  [obj]
+  (.stringify js/JSON (clj->js obj)))
+
+(defn hydrate
+  [string]
+  (js->clj (.parse js/JSON string)))
+
 (let [[in out] (core/connect "ws://localhost:8080/")]
   (go
     (loop []
-      (let [e (<! in)]
-        (put! out "sup?")
-        (put! out "yeah?")
+      (let [e (<! in)
+            json (hydrate (.-message e))]
+        (.log js/console (get json "label"))
+        (put! out (stringify { :label "sup?" }))
         (recur)))))

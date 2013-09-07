@@ -1,32 +1,40 @@
 (ns websockets.system
   (:require [com.keminglabs.jetty7-websockets-async.core :refer [configurator]]
             [clojure.core.async :refer [chan go >! <!]]
-            [clojure.core.match :refer [match]]
-            [ring.adapter.jetty :refer [run-jetty]]
-            [compojure.core :refer [routes]]
-            [compojure.route :as route]))
+            [clojure.data.json :as json]
+            [ring.adapter.jetty :refer [run-jetty]]))
 
-(def app
-  (routes
-    (route/files "/" {:root "public"})))
+(def connections (atom #{}))
+
+(defn close-connection
+  [details]
+  (swap! connections disj details))
+
+(defn new-connection
+  [details]
+  (swap! connections conj details)
+  (let [{uri :uri in :in out :out} details]
+    (go
+      (>! in (json/write-str {:label "Yo"})) ; welcome event
+      (loop []
+        (let [msg (<! out)]
+          (if msg
+            (let [json (json/read-str msg)]
+              (prn (get json "label"))
+              (recur))
+            (close-connection details)))))))
 
 (defn register-ws-app!
   [conn-chan]
   (go
     (while true
-      (match [(<! conn-chan)]
-        [{:uri uri :in in :out out}]
-        (go
-          (>! in "Yo")
-          (loop []
-            (when-let [msg (<! out)]
-              (prn msg)
-              (recur))))))))
+      (let [details (<! conn-chan)]
+        (new-connection details)))))
 
-(def c (chan))
+(defn init
+  [app]
+  (let [c (chan)]
+    (register-ws-app! c)
 
-(register-ws-app! c)
-
-(def server
-  (run-jetty app {:configurator (configurator c)
-                  :port 8080, :join? false}))
+    (run-jetty app {:configurator (configurator c)
+                    :port 8080, :join? false})))
