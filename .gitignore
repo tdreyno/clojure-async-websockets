@@ -1,0 +1,4 @@
+target
+public/*.js
+pom.xml
+.DS_Store
