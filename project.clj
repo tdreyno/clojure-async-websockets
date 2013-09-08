@@ -3,7 +3,7 @@
   :url "https://github.com/Instrument/clojure-websockets"
   
   :dependencies [[org.clojure/clojure "1.5.1"]
-                 [org.clojure/data.json "0.2.3"]
+                 [cheshire "5.2.0"]
                  [com.keminglabs/jetty7-websockets-async "0.1.0-SNAPSHOT"]
                  [org.clojure/core.async "0.1.0-SNAPSHOT"]
                  [ring/ring-jetty-adapter "1.2.0"]

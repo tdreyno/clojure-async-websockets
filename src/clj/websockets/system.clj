@@ -1,7 +1,7 @@
 (ns websockets.system
   (:require [com.keminglabs.jetty7-websockets-async.core :refer [configurator]]
             [clojure.core.async :refer [chan go >! <!]]
-            [clojure.data.json :as json]
+            [cheshire.core :as json]
             [ring.adapter.jetty :refer [run-jetty]]))
 
 (def connections (atom #{}))
@@ -15,11 +15,11 @@
   (swap! connections conj details)
   (let [{uri :uri in :in out :out} details]
     (go
-      (>! in (json/write-str {:label "Yo"})) ; welcome event
+      (>! in (json/generate-string {:label "Yo"})) ; welcome event
       (loop []
         (let [msg (<! out)]
           (if msg
-            (let [json (json/read-str msg)]
+            (let [json (json/parse-string msg)]
               (prn (get json "label"))
               (recur))
             (close-connection details)))))))
